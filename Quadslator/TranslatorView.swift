@@ -7,6 +7,7 @@ struct TranslatorView: View {
     @State private var translateAs = ""
     @State private var translatedText: String?
     @State private var isTranslating = false
+    @FocusState private var isSourceTextFocused: Bool // Focus state for the TextEditor
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \TranslationPreference.timestamp, ascending: true)],
@@ -22,7 +23,7 @@ struct TranslatorView: View {
                 
                 ZStack {
                     TextEditor(text: $sourceText)
-                        .frame(maxWidth: .infinity, minHeight: 200, maxHeight: 200) // Increased height
+                        .frame(maxWidth: .infinity, minHeight: 120, maxHeight: 120)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(
@@ -37,6 +38,7 @@ struct TranslatorView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
                         .foregroundColor(.white)
+                        .focused($isSourceTextFocused) // Bind focus state to TextEditor
                     
                     if !sourceText.isEmpty {
                         HStack {
@@ -87,10 +89,13 @@ struct TranslatorView: View {
             }
             
             if let translatedText = translatedText {
-                Text(translatedText)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundColor(.white)
+                ScrollView { // Wrap in ScrollView
+                    Text(translatedText)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundColor(.white)
+                }
+                .frame(maxHeight: 200) // Limit the height of the ScrollView
             }
             
             Spacer()
@@ -103,6 +108,7 @@ struct TranslatorView: View {
             if let lastPreference = preferences.first {
                 translateAs = lastPreference.translateAs ?? ""
             }
+            isSourceTextFocused = true // Set focus on sourceText on appear
         }
     }
     
@@ -122,22 +128,33 @@ struct TranslatorView: View {
         guard !sourceText.isEmpty && !translateAs.isEmpty else { return }
         
         isTranslating = true
-        // TODO: Implement OpenAI translation
-        // For now, just simulate translation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            translatedText = "[Translation will be implemented with OpenAI]: \(sourceText)"
-            isTranslating = false
-            
-            // Save translation
-            let translation = TranslationText(context: viewContext)
-            translation.sourceText = sourceText
-            translation.translatedText = translatedText
-            translation.timestamp = Date()
-            
+        let chatService = ChatService()
+        
+        Task {
             do {
-                try viewContext.save()
+                let translationResult = try await chatService.translate(text: sourceText, to: translateAs)
+                
+                DispatchQueue.main.async {
+                    self.translatedText = translationResult
+                    self.isTranslating = false
+                    
+                    // Save translation
+                    let translation = TranslationText(context: viewContext)
+                    translation.sourceText = sourceText
+                    translation.translatedText = translationResult
+                    translation.timestamp = Date()
+                    
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        print("Error saving translation: \(error)")
+                    }
+                }
             } catch {
-                print("Error saving translation: \(error)")
+                DispatchQueue.main.async {
+                    self.translatedText = "Translation failed: \(error.localizedDescription)"
+                    self.isTranslating = false
+                }
             }
         }
     }

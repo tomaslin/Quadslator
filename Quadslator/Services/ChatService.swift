@@ -34,18 +34,34 @@ class ChatService {
             .replacingOccurrences(of: "{targetLanguage}", with: targetLanguage)
         
         let message = ChatMessage(role: "user", content: prompt)
-        let request = ChatRequest(model: "gpt-3.5-turbo", messages: [message])
+        // Azure OpenAI requires the deployment name in the URL, not in the request body
+        let request = ChatRequest(model: "gpt-4", messages: [message])
         
-        var urlRequest = URLRequest(url: URL(string: config.apiUrl)!)
+        guard let url = URL(string: config.apiUrl) else {
+            throw NSError(domain: "ChatService", code: 3, userInfo: [NSLocalizedDescriptionKey: "Invalid API URL"])
+        }
+        
+        var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
-        urlRequest.addValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Azure OpenAI uses api-key header instead of Authorization
+        urlRequest.addValue(config.apiKey, forHTTPHeaderField: "api-key")
         urlRequest.httpBody = try JSONEncoder().encode(request)
         
-        let (data, _) = try await URLSession.shared.data(for: urlRequest)
-        let response = try JSONDecoder().decode(ChatResponse.self, from: data)
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
         
-        guard let translation = response.choices.first?.message.content else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NSError(domain: "ChatService", code: 4, userInfo: [NSLocalizedDescriptionKey: "Invalid response type"])
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw NSError(domain: "ChatService", code: 5, 
+                         userInfo: [NSLocalizedDescriptionKey: "API request failed with status code: \(httpResponse.statusCode)"])
+        }
+        
+        let apiResponse = try JSONDecoder().decode(ChatResponse.self, from: data)
+        
+        guard let translation = apiResponse.choices.first?.message.content else {
             throw NSError(domain: "ChatService", code: 2, userInfo: [NSLocalizedDescriptionKey: "No translation received"])
         }
         
