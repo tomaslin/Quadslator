@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="1" systemVersion="11A491" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="false" userDefinedModelVersionIdentifier="">
-    <entity name="Item" representedClassName="Item" syncable="YES" codeGenerationType="class">
+    <entity name="TranslationPreference" representedClassName="TranslationPreference" syncable="YES" codeGenerationType="class">
+        <attribute name="translateAs" attributeType="String" defaultValueString=""/>
+        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="TranslationText" representedClassName="TranslationText" syncable="YES" codeGenerationType="class">
+        <attribute name="sourceText" attributeType="String" defaultValueString=""/>
+        <attribute name="translatedText" optional="YES" attributeType="String"/>
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
     <elements>
-        <element name="Item" positionX="-63" positionY="-18" width="128" height="44"/>
+        <element name="TranslationPreference" positionX="-63" positionY="-18" width="128" height="74"/>
+        <element name="TranslationText" positionX="-63" positionY="0" width="128" height="89"/>
     </elements>
 </model>

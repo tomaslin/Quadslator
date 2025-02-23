@@ -13,7 +13,7 @@ struct QuadslatorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TranslatorView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }

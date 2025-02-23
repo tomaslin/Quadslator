@@ -1,0 +1,5 @@
+{
+    "apiUrl": "https://api.openai.com/v1/chat/completions",
+    "apiKey": "your-api-key-here",
+    "translationPrompt": "Provide four translations in {targetLanguage} for the following text, put the most popular and widely used translation first, only return the translations: {text}"
+}
